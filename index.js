@@ -29,16 +29,6 @@ function sleep(ms) {
 
     console.log(`Encontrados ${searchTerms.length} termos para pesquisar.`);
 
-    // --- First Run Instructions ---
-    console.log("\n********************************************************************************");
-    console.log("IMPORTANTE: Se esta é a primeira vez que você executa, o navegador será aberto.");
-    console.log("Faça login na sua conta da Microsoft no Bing para garantir que suas pesquisas sejam creditadas.");
-    console.log("Após o login, você pode fechar o navegador. As próximas execuções usarão a sessão salva.");
-    console.log("O script continuará com as pesquisas em 15 segundos...");
-    console.log("********************************************************************************\n");
-
-    await sleep(15000); // Give user 15 seconds to read the message and prepare for login
-
     for (let i = 0; i < searchTerms.length; i++) {
         const term = searchTerms[i];
         console.log(`Pesquisando por (${i + 1}/${searchTerms.length}): "${term}"`);

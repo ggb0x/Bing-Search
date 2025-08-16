@@ -21,7 +21,9 @@ def generate_realistic_terms(num_terms):
     generated_terms = set()
     while len(generated_terms) < num_terms:
         term_parts = random.sample(word_list, 2)
-        generated_terms.add(f"{term_parts[0]} {term_parts[1]}")
+        # Sort the parts to ensure uniqueness (e.g., "amor vida" is the same as "vida amor")
+        sorted_term = " ".join(sorted(term_parts))
+        generated_terms.add(sorted_term)
         
     return list(generated_terms)
 
@@ -30,4 +32,4 @@ if __name__ == "__main__":
     with open("search_terms.txt", "w", encoding="utf-8") as f:
         for term in search_terms:
             f.write(term + "\n")
-    print(f"{len(search_terms)} termos de pesquisa foram gerados e salvos em search_terms.txt")
+    print(f"{len(search_terms)} termos de pesquisa únicos foram gerados e salvos em search_terms.txt")
