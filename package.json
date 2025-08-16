@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "node-red-contrib-playwright": "^1.0.40",
+    "playwright": "^1.54.2"
+  }
+}
