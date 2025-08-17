@@ -47,6 +47,32 @@ Este projeto automatiza a realização de pesquisas no Bing com o objetivo de ac
     ```
     O script irá ler os termos do arquivo `search_terms.txt` e começar as pesquisas.
 
+## Automação
+
+Para facilitar a execução do processo, foram criados scripts de automação para Windows, Linux e macOS.
+
+### Windows
+
+Execute o arquivo `Rewards.bat`. Ele irá gerar os termos de pesquisa e iniciar o script de automação em sequência.
+
+```bash
+.\Rewards.bat
+```
+
+### Linux e macOS
+
+No Linux e macOS, use o script `rewards.sh`. Primeiro, dê a ele permissão de execução:
+
+```bash
+chmod +x rewards.sh
+```
+
+Depois, execute o script:
+
+```bash
+./rewards.sh
+```
+
 ## Observações Importantes
 
 - O diretório `user_data` armazena os dados da sua sessão de login. Ele já está incluído no `.gitignore` e **não deve** ser enviado para o repositório para garantir a segurança da sua conta.
