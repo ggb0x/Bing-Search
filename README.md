@@ -1,3 +1,5 @@
+![logo](logo.png)
+
 # Automação de Pesquisas Bing para Microsoft Rewards
 
 Este projeto automatiza a realização de pesquisas no Bing com o objetivo de acumular pontos no programa Microsoft Rewards. O script utiliza Node.js e Playwright para controlar um navegador, garantindo que as pesquisas sejam feitas de forma eficiente e única.
