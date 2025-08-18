@@ -80,7 +80,7 @@ def generate_realistic_terms(num_terms):
     return list(generated_terms)
 
 if __name__ == "__main__":
-    search_terms = generate_realistic_terms(30)
+    search_terms = generate_realistic_terms(33)
     with open("search_terms.txt", "w", encoding="utf-8") as f:
         for term in search_terms:
             f.write(term + "\n")
