@@ -33,23 +33,34 @@ function sleep(ms) {
         const term = searchTerms[i];
         console.log(`Pesquisando por (${i + 1}/${searchTerms.length}): "${term}"`);
 
-        try {
-            await page.goto('https://www.bing.com');
-            await page.waitForSelector('textarea[name="q"]');
-            await page.fill('textarea[name="q"]', term);
-            await page.press('textarea[name="q"]', 'Enter');
-            
-            // Wait for search results to load
-            await page.waitForSelector('#b_results'); 
+        let success = false;
+        for (let attempt = 1; attempt <= 3; attempt++) {
+            try {
+                await page.goto('https://www.bing.com');
+                await page.waitForSelector('textarea[name="q"]');
+                await page.fill('textarea[name="q"]', term);
+                await page.press('textarea[name="q"]', 'Enter');
+                
+                // Wait for search results to load
+                await page.waitForSelector('#b_results', { timeout: 8000 }); 
 
-            // Add a random delay between 5 to 10 seconds before the next search
-            const delay = Math.random() * 5000 + 5000; 
-            console.log(`Pesquisa concluída. Aguardando ${(delay / 1000).toFixed(1)} segundos...`);
-            await sleep(delay);
+                // Add a random delay between 5 to 10 seconds before the next search
+                const delay = Math.random() * 5000 + 5000; 
+                console.log(`Pesquisa concluída. Aguardando ${(delay / 1000).toFixed(1)} segundos...`);
+                await sleep(delay);
 
-        } catch (error) {
-            console.error(`Erro ao pesquisar por "${term}":`, error);
-            // Optional: decide if you want to stop or continue on error
+                success = true;
+                break; // Exit the retry loop on success
+
+            } catch (error) {
+                console.error(`Erro na tentativa ${attempt} ao pesquisar por "${term}":`, error.name);
+                if (attempt < 3) {
+                    console.log("Tentando novamente...");
+                    await sleep(2000); // Wait 2 seconds before retrying
+                } else {
+                    console.error(`Falha ao pesquisar por "${term}" após 3 tentativas.`);
+                }
+            }
         }
     }
 
