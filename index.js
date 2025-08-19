@@ -14,16 +14,22 @@ function sleep(ms) {
 }
 
 // Function to wait for manual captcha solving
-function waitForCaptcha() {
-    return new Promise(resolve => {
-        console.log("Por favor, resolva o captcha manualmente no navegador.");
-        console.log("Pressione Enter no terminal quando o captcha for resolvido para continuar...");
+async function waitForCaptcha(page) {
+    console.log("Captcha encontrado.");
+    console.log("Por favor, resolva o captcha manualmente no navegador.");
+    console.log("Pressione Enter no terminal quando o captcha for resolvido para continuar...");
+
+    await new Promise(resolve => {
         process.stdin.resume();
         process.stdin.once('data', () => {
             process.stdin.pause();
             resolve();
         });
     });
+
+    console.log("Verificando se o captcha foi resolvido...");
+    await page.waitForSelector('#b_header > div.captcha > div.captcha_text, #b_header > div.captcha > div.captcha_header', { state: 'hidden', timeout: 10000 });
+    console.log("Captcha resolvido. Retomando a automação.");
 }
 
 (async () => {
@@ -32,7 +38,7 @@ function waitForCaptcha() {
     // Launch the browser with a persistent context
     const browserContext = await chromium.launchPersistentContext(userDataDir, {
         headless: false, // Set to false to see the browser UI
-        slowMo: 50,      // Slows down Playwright operations by 50ms to be more human-like
+        slowMo: 100,      // Slows down Playwright operations by 100ms to be more human-like
     });
 
     const page = await browserContext.newPage();
@@ -51,23 +57,21 @@ function waitForCaptcha() {
             try {
                 await page.goto('https://www.bing.com');
                 await page.waitForSelector('textarea[name="q"]');
-                await page.fill('textarea[name="q"]', term);
+                await page.type('textarea[name="q"]', term, { delay: 100 });
                 await page.press('textarea[name="q"]', 'Enter');
 
                 // Wait for search results to load OR for a captcha
+                const timeout = 10000; // 10 seconds
                 await Promise.race([
-                    page.waitForSelector('#b_results', { timeout: 8000 }),
-                    page.waitForSelector('#captcha_title', { timeout: 8000 }),
-                    page.waitForSelector('iframe[title="Cloudflare"]', { timeout: 8000 }),
-                    page.waitForSelector('iframe[title="hCaptcha"]', { timeout: 8000 }),
+                    page.waitForSelector('#b_results', { timeout }),
+                    page.waitForSelector('#b_header > div.captcha > div.captcha_text', { timeout }),
+                    page.waitForSelector('#b_header > div.captcha > div.captcha_header', { timeout }),
                 ]);
 
-                const pageTitle = await page.title();
-                const isCloudflare = pageTitle.includes('Attention Required! | Cloudflare');
-                const isCaptcha = await page.$('#captcha_title, iframe[title="Cloudflare"], iframe[title="hCaptcha"]');
+                const isCaptcha = await page.$('#b_header > div.captcha > div.captcha_text, #b_header > div.captcha > div.captcha_header');
 
-                if (isCloudflare || isCaptcha) {
-                    await waitForCaptcha();
+                if (isCaptcha) {
+                    await waitForCaptcha(page);
                 }
 
 
