@@ -57,11 +57,16 @@ function waitForCaptcha() {
                 // Wait for search results to load OR for a captcha
                 await Promise.race([
                     page.waitForSelector('#b_results', { timeout: 8000 }),
-                    page.waitForSelector('#captcha_title', { timeout: 8000 })
+                    page.waitForSelector('#captcha_title', { timeout: 8000 }),
+                    page.waitForSelector('iframe[title="Cloudflare"]', { timeout: 8000 }),
+                    page.waitForSelector('iframe[title="hCaptcha"]', { timeout: 8000 }),
                 ]);
 
-                const isCaptcha = await page.$('#captcha_title');
-                if (isCaptcha) {
+                const pageTitle = await page.title();
+                const isCloudflare = pageTitle.includes('Attention Required! | Cloudflare');
+                const isCaptcha = await page.$('#captcha_title, iframe[title="Cloudflare"], iframe[title="hCaptcha"]');
+
+                if (isCloudflare || isCaptcha) {
                     await waitForCaptcha();
                 }
 
