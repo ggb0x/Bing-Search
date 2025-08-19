@@ -13,47 +13,13 @@ function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-async function isSearchSuccessful(page) {
-    try {
-        await page.waitForSelector('#b_results li.b_algo', { timeout: 5000 });
-        return true;
-    } catch (error) {
-        return false;
-    }
-}
-
-async function isCaptchaPresent(page) {
-    const captchaSelectors = [
-        'div.captcha',
-        '[id^=captcha]',
-        '[class^=captcha]',
-        'iframe[src*="captcha"]',
-        '#b_header > div.captcha',
-        '#recaptcha',
-        'iframe[title*="reCAPTCHA"]'
-    ];
-
-    for (const selector of captchaSelectors) {
-        if (await page.$(selector)) {
-            return true;
-        }
-        // Check inside iframes
-        for (const frame of page.frames()) {
-            if (await frame.$(selector)) {
-                return true;
-            }
-        }
-    }
-    return false;
-}
-
 (async () => {
     console.log("Iniciando a automação de pesquisa do Bing...");
 
     // Launch the browser with a persistent context
     const browserContext = await chromium.launchPersistentContext(userDataDir, {
         headless: false, // Set to false to see the browser UI
-        slowMo: 100,      // Slows down Playwright operations by 100ms to be more human-like
+        slowMo: 50,      // Slows down Playwright operations by 50ms to be more human-like
     });
 
     const page = await browserContext.newPage();
@@ -72,40 +38,22 @@ async function isCaptchaPresent(page) {
             try {
                 await page.goto('https://www.bing.com');
                 await page.waitForSelector('textarea[name="q"]');
-                await page.type('textarea[name="q"]', term, { delay: 100 });
+                await page.fill('textarea[name="q"]', term);
                 await page.press('textarea[name="q"]', 'Enter');
+                
+                // Wait for search results to load
+                await page.waitForSelector('#b_results', { timeout: 8000 }); 
 
-                await page.waitForLoadState('domcontentloaded');
+                // Add a random delay between 5 to 10 seconds before the next search
+                const delay = Math.random() * 5000 + 5000; 
+                console.log(`Pesquisa concluída. Aguardando ${(delay / 1000).toFixed(1)} segundos...`);
+                await sleep(delay);
 
-                if (await isSearchSuccessful(page)) {
-                    console.log("Pesquisa concluída com sucesso.");
-                    const delay = Math.random() * 5000 + 5000;
-                    console.log(`Aguardando ${(delay / 1000).toFixed(1)} segundos...`);
-                    await sleep(delay);
-                    success = true;
-                    break;
-                } else if (await isCaptchaPresent(page)) {
-                    console.log("Captcha encontrado.");
-                    console.log("Por favor, resolva o captcha manualmente no navegador.");
-                    console.log("Pressione Enter no terminal quando o captcha for resolvido para continuar...");
-
-                    await new Promise(resolve => {
-                        process.stdin.resume();
-                        process.stdin.once('data', () => {
-                            process.stdin.pause();
-                            resolve();
-                        });
-                    });
-                    // After user confirmation, we assume captcha is solved and retry the search
-                    console.log("Retentando a pesquisa após resolução do captcha...");
-                    continue; // a new attempt will start
-                } else {
-                    console.log("Não foi possível confirmar o sucesso da pesquisa nem a presença de um captcha. Tentando novamente...");
-                    throw new Error("Unknown state");
-                }
+                success = true;
+                break; // Exit the retry loop on success
 
             } catch (error) {
-                console.error(`Erro na tentativa ${attempt} ao pesquisar por "${term}":`, error.message);
+                console.error(`Erro na tentativa ${attempt} ao pesquisar por "${term}":`, error.name);
                 if (attempt < 3) {
                     console.log("Tentando novamente...");
                     await sleep(2000); // Wait 2 seconds before retrying
@@ -113,9 +61,6 @@ async function isCaptchaPresent(page) {
                     console.error(`Falha ao pesquisar por "${term}" após 3 tentativas.`);
                 }
             }
-        }
-        if (!success) {
-            console.error(`Não foi possível concluir a pesquisa para o termo "${term}". Passando para o próximo.`);
         }
     }
 
