@@ -13,25 +13,6 @@ function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-// Function to wait for manual captcha solving
-async function waitForCaptcha(page) {
-    console.log("Captcha encontrado.");
-    console.log("Por favor, resolva o captcha manualmente no navegador.");
-    console.log("Pressione Enter no terminal quando o captcha for resolvido para continuar...");
-
-    await new Promise(resolve => {
-        process.stdin.resume();
-        process.stdin.once('data', () => {
-            process.stdin.pause();
-            resolve();
-        });
-    });
-
-    console.log("Verificando se o captcha foi resolvido...");
-    await page.waitForSelector('#b_header > div.captcha > div.captcha_text, #b_header > div.captcha > div.captcha_header', { state: 'hidden', timeout: 10000 });
-    console.log("Captcha resolvido. Retomando a automação.");
-}
-
 (async () => {
     console.log("Iniciando a automação de pesquisa do Bing...");
 
@@ -60,18 +41,55 @@ async function waitForCaptcha(page) {
                 await page.type('textarea[name="q"]', term, { delay: 100 });
                 await page.press('textarea[name="q"]', 'Enter');
 
-                // Wait for search results to load OR for a captcha
-                const timeout = 10000; // 10 seconds
-                await Promise.race([
-                    page.waitForSelector('#b_results', { timeout }),
-                    page.waitForSelector('#b_header > div.captcha > div.captcha_text', { timeout }),
-                    page.waitForSelector('#b_header > div.captcha > div.captcha_header', { timeout }),
-                ]);
+                // Wait for navigation to complete
+                await page.waitForLoadState('domcontentloaded');
 
-                const isCaptcha = await page.$('#b_header > div.captcha > div.captcha_text, #b_header > div.captcha > div.captcha_header');
+                const captchaSelectors = [
+                    'div.captcha',
+                    '[id^=captcha]',
+                    '[class^=captcha]',
+                    'iframe[src*="captcha"]',
+                    '#b_header > div.captcha',
+                ];
+
+                let isCaptcha = false;
+                for (const selector of captchaSelectors) {
+                    if (await page.$(selector)) {
+                        isCaptcha = true;
+                        break;
+                    }
+                }
 
                 if (isCaptcha) {
-                    await waitForCaptcha(page);
+                    console.log("Captcha encontrado.");
+                    console.log("Por favor, resolva o captcha manualmente no navegador.");
+                    console.log("Pressione Enter no terminal quando o captcha for resolvido para continuar...");
+
+                    await new Promise(resolve => {
+                        process.stdin.resume();
+                        process.stdin.once('data', () => {
+                            process.stdin.pause();
+                            resolve();
+                        });
+                    });
+
+                    console.log("Verificando se o captcha foi resolvido...");
+                    await page.waitForFunction(() => {
+                        const captchaSelectors = [
+                            'div.captcha',
+                            '[id^=captcha]',
+                            '[class^=captcha]',
+                            'iframe[src*="captcha"]',
+                            '#b_header > div.captcha',
+                        ];
+                        for (const selector of captchaSelectors) {
+                            if (document.querySelector(selector)) {
+                                return false;
+                            }
+                        }
+                        return true;
+                    }, {}, { timeout: 10000 });
+                    console.log("Captcha resolvido. Retomando a automação.");
                 }
 
 
