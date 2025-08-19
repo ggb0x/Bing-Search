@@ -13,6 +13,19 @@ function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+// Function to wait for manual captcha solving
+function waitForCaptcha() {
+    return new Promise(resolve => {
+        console.log("Por favor, resolva o captcha manualmente no navegador.");
+        console.log("Pressione Enter no terminal quando o captcha for resolvido para continuar...");
+        process.stdin.resume();
+        process.stdin.once('data', () => {
+            process.stdin.pause();
+            resolve();
+        });
+    });
+}
+
 (async () => {
     console.log("Iniciando a automação de pesquisa do Bing...");
 
@@ -40,12 +53,21 @@ function sleep(ms) {
                 await page.waitForSelector('textarea[name="q"]');
                 await page.fill('textarea[name="q"]', term);
                 await page.press('textarea[name="q"]', 'Enter');
-                
-                // Wait for search results to load
-                await page.waitForSelector('#b_results', { timeout: 8000 }); 
+
+                // Wait for search results to load OR for a captcha
+                await Promise.race([
+                    page.waitForSelector('#b_results', { timeout: 8000 }),
+                    page.waitForSelector('#captcha_title', { timeout: 8000 })
+                ]);
+
+                const isCaptcha = await page.$('#captcha_title');
+                if (isCaptcha) {
+                    await waitForCaptcha();
+                }
+
 
                 // Add a random delay between 5 to 10 seconds before the next search
-                const delay = Math.random() * 5000 + 5000; 
+                const delay = Math.random() * 5000 + 5000;
                 console.log(`Pesquisa concluída. Aguardando ${(delay / 1000).toFixed(1)} segundos...`);
                 await sleep(delay);
 
